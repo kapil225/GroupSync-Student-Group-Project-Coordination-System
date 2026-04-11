@@ -1,0 +1,15 @@
+/* ═══════════════════════════════════════════
+   App Layout
+   ═══════════════════════════════════════════ */
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app__main {
+  flex: 1;
+  margin-left: 240px;
+  min-height: 100vh;
+  background: var(--bg-root);
+}

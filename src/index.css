@@ -1,0 +1,128 @@
+/* ═══════════════════════════════════════════
+   GroupSync — Global Styles & Design Tokens
+   ═══════════════════════════════════════════ */
+
+:root {
+  /* ── Surface Colors ── */
+  --bg-root: #0b0b12;
+  --bg-surface: #111119;
+  --bg-elevated: #18182a;
+  --bg-card: #14141f;
+  --bg-input: #0e0e18;
+  --bg-hover: #1c1c30;
+
+  /* ── Border ── */
+  --border-subtle: #1e1e30;
+  --border-default: #2a2a40;
+  --border-focus: #4a8aff;
+
+  /* ── Text ── */
+  --text-primary: #e8e8f0;
+  --text-secondary: #8888a0;
+  --text-muted: #55556a;
+  --text-inverse: #0b0b12;
+
+  /* ── Accent ── */
+  --accent: #4a8aff;
+  --accent-hover: #5e9aff;
+  --accent-subtle: rgba(74, 138, 255, 0.12);
+  --accent-glow: rgba(74, 138, 255, 0.25);
+
+  /* ── Semantic ── */
+  --success: #34d473;
+  --warning: #f5a623;
+  --danger: #e04848;
+
+  /* ── Priority ── */
+  --priority-low: #5a9a6a;
+  --priority-medium: #c49a3a;
+  --priority-high: #d94444;
+
+  /* ── Typography ── */
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
+  /* ── Spacing ── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* ── Transitions ── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-root);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
