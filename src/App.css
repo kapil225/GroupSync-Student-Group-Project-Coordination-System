@@ -1,6 +1,9 @@
-/* ═══════════════════════════════════════════
-   App Layout
-   ═══════════════════════════════════════════ */
+/**
+ * App.css
+ * 
+ * Top-level layout: sidebar on the left, main content on the right.
+ * The main area is offset by 240px to account for the fixed sidebar.
+ */
 
 .app {
   display: flex;
@@ -9,7 +12,7 @@
 
 .app__main {
   flex: 1;
-  margin-left: 240px;
+  margin-left: 240px;       /* Same width as the sidebar */
   min-height: 100vh;
   background: var(--bg-root);
 }

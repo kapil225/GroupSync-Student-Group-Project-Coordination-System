@@ -1,12 +1,21 @@
-/* ═══════════════════════════════════════════
-   Modal Styles
-   ═══════════════════════════════════════════ */
+/**
+ * Modal.css
+ * 
+ * Styles for the reusable modal dialog.
+ * Also includes shared form element styles (.form-input, .form-select, etc.)
+ * that are used inside modals throughout the app.
+ */
+
+
+/* ─────────────────────────────────────────────
+   OVERLAY (dark backdrop)
+   ───────────────────────────────────────────── */
 
 .modal-overlay {
   position: fixed;
-  inset: 0;
+  inset: 0;                      /* Covers the entire viewport */
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);    /* Slight blur on the content behind */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,6 +23,11 @@
   padding: 20px;
   animation: fadeIn 0.15s ease;
 }
+
+
+/* ─────────────────────────────────────────────
+   MODAL BOX
+   ───────────────────────────────────────────── */
 
 .modal {
   background: var(--bg-elevated);
@@ -26,6 +40,7 @@
   animation: scaleIn 0.2s var(--ease-out);
 }
 
+/* Header with title and close button */
 .modal__header {
   display: flex;
   justify-content: space-between;
@@ -54,6 +69,7 @@
   color: var(--text-primary);
 }
 
+/* Body — vertical stack of form fields */
 .modal__body {
   padding: 22px;
   display: flex;
@@ -61,16 +77,25 @@
   gap: 14px;
 }
 
-/* ── Form Elements inside modal ── */
+
+/* ─────────────────────────────────────────────
+   SHARED FORM ELEMENTS
+   
+   These classes are used inside modals across
+   the app for consistent form styling.
+   ───────────────────────────────────────────── */
+
+/* Small uppercase label above a form field */
 .form-label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin-bottom: -6px;
+  margin-bottom: -6px;           /* Tighten the gap to the input below */
 }
 
+/* Text input */
 .form-input {
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
@@ -91,6 +116,7 @@
   color: var(--text-muted);
 }
 
+/* Dropdown select */
 .form-select {
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
@@ -103,6 +129,7 @@
   cursor: pointer;
 }
 
+/* Textarea */
 .form-textarea {
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
@@ -121,6 +148,7 @@
   border-color: var(--border-focus);
 }
 
+/* Primary action button (e.g., "Create", "Add") */
 .form-btn-primary {
   background: var(--accent);
   color: #fff;
@@ -137,7 +165,14 @@
   background: var(--accent-hover);
 }
 
-/* ── Avatar Picker ── */
+
+/* ─────────────────────────────────────────────
+   AVATAR PICKER
+   
+   A grid of emoji options the user can click
+   to choose their avatar.
+   ───────────────────────────────────────────── */
+
 .avatar-picker {
   display: flex;
   flex-wrap: wrap;
@@ -158,6 +193,7 @@
   transform: scale(1.15);
 }
 
+/* The currently selected avatar gets a blue ring */
 .avatar-picker__option--selected {
   outline-color: var(--accent);
   background: var(--accent-subtle);

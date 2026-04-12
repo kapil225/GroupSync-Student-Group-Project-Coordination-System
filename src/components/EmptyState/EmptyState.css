@@ -1,6 +1,9 @@
-/* ═══════════════════════════════════════════
-   EmptyState Styles
-   ═══════════════════════════════════════════ */
+/**
+ * EmptyState.css
+ * 
+ * A centered, visually gentle placeholder.
+ * The icon has a subtle glow effect to draw attention.
+ */
 
 .empty-state {
   display: flex;
@@ -31,4 +34,5 @@
   font-size: 14px;
   color: var(--text-muted);
   max-width: 300px;
+  line-height: 1.5;
 }

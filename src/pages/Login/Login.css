@@ -1,0 +1,177 @@
+/**
+ * Login.css
+ * 
+ * Full-page centered login card with a dark theme.
+ */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-root);
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 400px;
+  animation: scaleIn 0.3s var(--ease-out);
+}
+
+/* ── Logo ── */
+.login-card__logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-card__logo-icon {
+  font-size: 36px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 12px var(--accent-glow));
+  display: block;
+  margin-bottom: 8px;
+}
+
+.login-card__logo-text {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.login-card__tagline {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Tabs ── */
+.login-card__tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.login-card__tab {
+  flex: 1;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.login-card__tab--active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Error ── */
+.login-card__error {
+  background: rgba(224, 72, 72, 0.1);
+  border: 1px solid rgba(224, 72, 72, 0.25);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* ── Form ── */
+.login-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-card__input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.login-card__input:focus {
+  border-color: var(--border-focus);
+}
+
+.login-card__input::placeholder {
+  color: var(--text-muted);
+}
+
+.login-card__submit {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s;
+  margin-top: 4px;
+}
+
+.login-card__submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.login-card__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Divider ── */
+.login-card__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.login-card__divider::before,
+.login-card__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* ── Google Button ── */
+.login-card__google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.login-card__google:hover {
+  border-color: var(--border-default);
+  background: var(--bg-hover);
+}

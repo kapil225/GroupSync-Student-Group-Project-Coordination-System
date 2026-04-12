@@ -1,6 +1,15 @@
-/* ═══════════════════════════════════════════
-   GroupCard Styles
-   ═══════════════════════════════════════════ */
+/**
+ * GroupCard.css
+ * 
+ * Styles for the project card component.
+ * Cards have a subtle lift effect on hover and
+ * a staggered slide-up entrance animation.
+ */
+
+
+/* ─────────────────────────────────────────────
+   CARD CONTAINER
+   ───────────────────────────────────────────── */
 
 .group-card {
   background: var(--bg-card);
@@ -8,9 +17,16 @@
   border-radius: var(--radius-lg);
   padding: 22px;
   cursor: pointer;
-  transition: border-color 0.2s, transform 0.18s var(--ease-out), box-shadow 0.2s;
-  animation: slideUp 0.4s var(--ease-out) both;
   position: relative;
+
+  /* Hover effects */
+  transition:
+    border-color 0.2s,
+    transform 0.18s var(--ease-out),
+    box-shadow 0.2s;
+
+  /* Staggered entrance — each card slides up with a slight delay */
+  animation: slideUp 0.4s var(--ease-out) both;
 }
 
 .group-card:hover {
@@ -19,7 +35,11 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-/* ── Header ── */
+
+/* ─────────────────────────────────────────────
+   HEADER (Name + Delete button)
+   ───────────────────────────────────────────── */
+
 .group-card__header {
   display: flex;
   justify-content: space-between;
@@ -35,18 +55,19 @@
   color: var(--text-primary);
 }
 
+/* Delete button — hidden by default, shows on card hover */
 .group-card__delete {
   background: none;
   border: none;
   color: var(--text-muted);
   padding: 4px;
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
-  opacity: 0;
+  opacity: 0;                     /* Hidden until hover */
+  transition: color 0.15s, background 0.15s, opacity 0.15s;
 }
 
 .group-card:hover .group-card__delete {
-  opacity: 1;
+  opacity: 1;                     /* Reveal on card hover */
 }
 
 .group-card__delete:hover {
@@ -54,12 +75,16 @@
   background: rgba(224, 72, 72, 0.1);
 }
 
-/* ── Avatars ── */
+
+/* ─────────────────────────────────────────────
+   MEMBER AVATARS
+   ───────────────────────────────────────────── */
+
 .group-card__avatars {
   display: flex;
   gap: 4px;
   margin-bottom: 16px;
-  min-height: 30px;
+  min-height: 30px;              /* Prevent layout shift when empty */
   align-items: center;
 }
 
@@ -69,7 +94,7 @@
 }
 
 .group-card__avatar:hover {
-  transform: scale(1.2);
+  transform: scale(1.2);        /* Fun little pop on hover */
 }
 
 .group-card__avatar-more {
@@ -84,7 +109,23 @@
   font-style: italic;
 }
 
-/* ── Stats ── */
+/* Project code badge */
+.group-card__code {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+
+/* ─────────────────────────────────────────────
+   STATS ROW
+   ───────────────────────────────────────────── */
+
 .group-card__stats {
   display: flex;
   gap: 16px;

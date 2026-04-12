@@ -1,31 +1,8 @@
-/* ═══════════════════════════════════════════
-   Home Page Styles
-   ═══════════════════════════════════════════ */
-
-.home {
-  padding: 32px 36px;
-}
-
-.home__header {
-  margin-bottom: 32px;
-}
-
-.home__title {
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 400;
-  color: var(--text-primary);
-  line-height: 1.1;
-}
-
-.home__subtitle {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 6px;
-}
-
-.home__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
+.home { padding: 32px 36px; }
+.home__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 12px; }
+.home__title { font-family: var(--font-display); font-size: 32px; font-weight: 400; color: var(--text-primary); line-height: 1.1; }
+.home__subtitle { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+.home__actions { display: flex; gap: 8px; }
+.home__join-btn { display: flex; align-items: center; gap: 6px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-secondary); border-radius: var(--radius-md); padding: 9px 16px; font-size: 13px; font-weight: 500; transition: border-color 0.15s, color 0.15s; }
+.home__join-btn:hover { border-color: var(--border-default); color: var(--text-primary); }
+.home__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
