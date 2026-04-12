@@ -1,58 +1,84 @@
-/* ═══════════════════════════════════════════
-   GroupSync — Global Styles & Design Tokens
-   ═══════════════════════════════════════════ */
+/**
+ * index.css
+ * 
+ * Global styles for GroupSync.
+ * 
+ * This file contains:
+ *   - CSS custom properties (design tokens) for consistent theming
+ *   - A basic CSS reset so we start from a clean slate
+ *   - Custom scrollbar styling
+ *   - Reusable keyframe animations
+ * 
+ * All colors, fonts, spacing, and transitions are defined here as
+ * CSS variables so every component can reference them. If you want
+ * to change the color scheme, this is the only file you need to touch.
+ */
+
+
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS (CSS Custom Properties)
+   ───────────────────────────────────────────── */
 
 :root {
-  /* ── Surface Colors ── */
-  --bg-root: #0b0b12;
-  --bg-surface: #111119;
-  --bg-elevated: #18182a;
-  --bg-card: #14141f;
-  --bg-input: #0e0e18;
-  --bg-hover: #1c1c30;
 
-  /* ── Border ── */
-  --border-subtle: #1e1e30;
-  --border-default: #2a2a40;
-  --border-focus: #4a8aff;
+  /* Surface colors — the backgrounds of different layers.
+     Darker surfaces sit behind lighter ones to create depth. */
+  --bg-root:      #0b0b12;    /* Page background (darkest)     */
+  --bg-surface:   #111119;    /* Sidebar, panels                */
+  --bg-elevated:  #18182a;    /* Cards, modals                  */
+  --bg-card:      #14141f;    /* Slightly different card tone    */
+  --bg-input:     #0e0e18;    /* Input fields, select boxes     */
+  --bg-hover:     #1c1c30;    /* Hover state on interactive items */
 
-  /* ── Text ── */
-  --text-primary: #e8e8f0;
-  --text-secondary: #8888a0;
-  --text-muted: #55556a;
-  --text-inverse: #0b0b12;
+  /* Border colors — three levels of emphasis */
+  --border-subtle:  #1e1e30;  /* Barely visible dividers        */
+  --border-default: #2a2a40;  /* Normal borders                 */
+  --border-focus:   #4a8aff;  /* Input focus ring               */
 
-  /* ── Accent ── */
-  --accent: #4a8aff;
-  --accent-hover: #5e9aff;
-  --accent-subtle: rgba(74, 138, 255, 0.12);
-  --accent-glow: rgba(74, 138, 255, 0.25);
+  /* Text colors — from brightest to most muted */
+  --text-primary:   #e8e8f0;  /* Main body text                 */
+  --text-secondary: #8888a0;  /* Supporting text                */
+  --text-muted:     #55556a;  /* Placeholders, hints            */
+  --text-inverse:   #0b0b12;  /* Text on bright buttons         */
 
-  /* ── Semantic ── */
-  --success: #34d473;
-  --warning: #f5a623;
-  --danger: #e04848;
+  /* Accent — our primary brand color (blue) */
+  --accent:        #4a8aff;
+  --accent-hover:  #5e9aff;   /* Slightly lighter on hover      */
+  --accent-subtle: rgba(74, 138, 255, 0.12);  /* Faint tint    */
+  --accent-glow:   rgba(74, 138, 255, 0.25);  /* For glow effects */
 
-  /* ── Priority ── */
-  --priority-low: #5a9a6a;
-  --priority-medium: #c49a3a;
-  --priority-high: #d94444;
+  /* Semantic colors for specific meanings */
+  --success: #34d473;         /* Green — completed, positive    */
+  --warning: #f5a623;         /* Orange — attention needed      */
+  --danger:  #e04848;         /* Red — errors, destructive      */
 
-  /* ── Typography ── */
+  /* Task priority colors */
+  --priority-low:    #5a9a6a; /* Soft green                     */
+  --priority-medium: #c49a3a; /* Amber                          */
+  --priority-high:   #d94444; /* Red                            */
+
+  /* Typography — display font for headings, body font for everything else */
   --font-display: 'Instrument Serif', serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
 
-  /* ── Spacing ── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-full: 999px;
+  /* Border radius scale */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-full: 999px;       /* Pill shape                     */
 
-  /* ── Transitions ── */
+  /* A nice custom easing curve for smooth animations */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ── Reset ── */
+
+/* ─────────────────────────────────────────────
+   CSS RESET
+   
+   We strip margins, padding, and set box-sizing
+   so every element behaves predictably.
+   ───────────────────────────────────────────── */
+
 *,
 *::before,
 *::after {
@@ -66,10 +92,11 @@ body {
   background: var(--bg-root);
   color: var(--text-primary);
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;  /* Smoother text on Mac */
+  overflow-x: hidden;                   /* Prevent horizontal scroll */
 }
 
+/* Make sure form elements inherit our font choices */
 input,
 select,
 textarea,
@@ -82,24 +109,42 @@ button {
   cursor: pointer;
 }
 
-/* ── Scrollbar ── */
+
+/* ─────────────────────────────────────────────
+   CUSTOM SCROLLBAR
+   
+   A thin, subtle scrollbar that matches our theme.
+   Only works in WebKit browsers (Chrome, Safari, Edge).
+   ───────────────────────────────────────────── */
+
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--border-default);
   border-radius: 3px;
 }
 
-/* ── Animations ── */
+
+/* ─────────────────────────────────────────────
+   KEYFRAME ANIMATIONS
+   
+   These are reused throughout the app.
+   Components reference them via `animation: fadeIn 0.3s ease`.
+   ───────────────────────────────────────────── */
+
+/* Simple opacity fade */
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
+/* Slide up from below with a fade — great for cards and list items */
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -111,6 +156,7 @@ button {
   }
 }
 
+/* Scale up slightly while fading in — perfect for modals */
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -120,9 +166,4 @@ button {
     opacity: 1;
     transform: scale(1);
   }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }

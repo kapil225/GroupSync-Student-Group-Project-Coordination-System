@@ -1,0 +1,128 @@
+# ═══════════════════════════════════════════════════════════════
+# GitHub Actions — CI/CD Pipeline for GroupSync
+# ═══════════════════════════════════════════════════════════════
+#
+# This workflow runs automatically on every push and pull request
+# to the main branch. It performs three jobs:
+#
+#   1. LINT & TEST  — Install dependencies, run unit tests
+#   2. BUILD        — Make sure the production build succeeds
+#   3. DEPLOY       — Deploy to GitHub Pages (on main branch only)
+#
+# HOW IT WORKS:
+#   - A developer pushes code or opens a pull request
+#   - GitHub automatically spins up a virtual machine (Ubuntu)
+#   - It installs Node.js, runs npm install, then runs tests
+#   - If tests pass, it builds the app
+#   - If on main branch, it deploys to GitHub Pages
+#
+# This is a real-world CI/CD pipeline that catches bugs early
+# and ensures every merge to main is deployable.
+# ═══════════════════════════════════════════════════════════════
+
+name: CI/CD Pipeline
+
+# ── When does this pipeline run? ──
+on:
+  push:
+    branches: [main]          # Run on every push to main
+  pull_request:
+    branches: [main]          # Run on PRs targeting main
+
+# ── Jobs ──
+jobs:
+
+  # ─────────────────────────────────────────
+  # JOB 1: Lint and Test
+  #
+  # Installs dependencies and runs our unit
+  # tests. If any test fails, the whole
+  # pipeline stops — no broken code gets merged.
+  # ─────────────────────────────────────────
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the code from the repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js (version 20)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'          # Cache node_modules for faster runs
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm ci              # 'ci' is faster and stricter than 'install'
+
+      # Step 4: Run unit tests
+      - name: Run unit tests
+        run: npm test
+
+  # ─────────────────────────────────────────
+  # JOB 2: Build
+  #
+  # Runs after tests pass. Ensures the app
+  # can be built for production without errors.
+  # A failing build here means something is
+  # broken that tests didn't catch.
+  # ─────────────────────────────────────────
+  build:
+    name: Build Production
+    runs-on: ubuntu-latest
+    needs: test                  # Only run if tests passed
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for production
+        run: npm run build
+
+      # Save the build output so the deploy job can use it
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+  # ─────────────────────────────────────────
+  # JOB 3: Deploy to GitHub Pages
+  #
+  # Only runs on pushes to main (not on PRs).
+  # Takes the built files and publishes them
+  # to GitHub Pages so the app is live on the web.
+  #
+  # After this, your app is accessible at:
+  # https://YOUR_USERNAME.github.io/groupsync/
+  # ─────────────────────────────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'   # Only deploy from main branch
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
