@@ -34,6 +34,7 @@ import { getFirestore } from 'firebase/firestore';
 // Replace the placeholder values with your own
 // from the Firebase Console.
 // ═══════════════════════════════════════════
+
 const firebaseConfig = {
   apiKey: "AIzaSyCc1KTY6C_T-emVe7F06EFg23o-8jyngSU",
   authDomain: "crud-f84ce.firebaseapp.com",

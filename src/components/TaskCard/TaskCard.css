@@ -1,18 +1,9 @@
-/**
- * TaskCard.css
- * 
- * Styles for individual task cards.
- * The left border color indicates priority level.
- * Delete button is hidden until hover.
- */
-
-
-/* ─────────────────────────────────────────────
-   CARD CONTAINER
-   ───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   TaskCard Styles (V2)
+   ═══════════════════════════════════════════ */
 
 .task-card {
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 14px 16px;
@@ -20,23 +11,31 @@
   flex-direction: column;
   gap: 10px;
   position: relative;
-  overflow: hidden;                /* Clip the priority bar */
-
-  /* Staggered entrance */
+  overflow: hidden;
+  cursor: pointer;
   animation: slideUp 0.35s var(--ease-out) both;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
 }
 
 .task-card:hover {
   border-color: var(--border-default);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
+.task-card[draggable="true"] {
+  cursor: grab;
+}
 
-/* ─────────────────────────────────────────────
-   PRIORITY BAR (left edge)
-   ───────────────────────────────────────────── */
+.task-card[draggable="true"]:active {
+  cursor: grabbing;
+}
 
-.task-card__priority-bar {
+.task-card--dragging {
+  opacity: 0.4;
+}
+
+/* ── Priority bar ── */
+.task-card__priority {
   position: absolute;
   left: 0;
   top: 0;
@@ -44,25 +43,20 @@
   width: 3px;
 }
 
-
-/* ─────────────────────────────────────────────
-   CONTENT (title + description)
-   ───────────────────────────────────────────── */
-
-.task-card__content {
-  padding-left: 6px;             /* Offset from the priority bar */
+/* ── Body ── */
+.task-card__body {
+  padding-left: 6px;
 }
 
 .task-card__title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.3;
 }
 
-/* Description is truncated to 2 lines max */
-.task-card__description {
-  font-size: 12px;
+.task-card__desc {
+  font-size: 11px;
   color: var(--text-muted);
   margin-top: 4px;
   line-height: 1.4;
@@ -72,11 +66,7 @@
   overflow: hidden;
 }
 
-
-/* ─────────────────────────────────────────────
-   FOOTER (assignee + delete)
-   ───────────────────────────────────────────── */
-
+/* ── Footer ── */
 .task-card__footer {
   display: flex;
   justify-content: space-between;
@@ -87,13 +77,13 @@
 .task-card__assignee {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
 .task-card__assignee-avatar {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .task-card__unassigned {
@@ -102,21 +92,10 @@
   font-style: italic;
 }
 
-/* Delete — hidden until card hover */
-.task-card__delete {
-  background: none;
-  border: none;
+.task-card__comments {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
   color: var(--text-muted);
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s;
-}
-
-.task-card:hover .task-card__delete {
-  opacity: 1;
-}
-
-.task-card__delete:hover {
-  color: var(--danger);
 }

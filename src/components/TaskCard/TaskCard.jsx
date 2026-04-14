@@ -1,47 +1,67 @@
 /**
- * TaskCard.jsx
+ * TaskCard.jsx — V2
  * 
- * Displays a single task as a card with:
- *   - A colored left border indicating priority (green/amber/red)
- *   - The task title and description (truncated to 2 lines)
- *   - The assigned member's avatar and name (or "Unassigned")
- *   - A delete button that appears on hover
+ * A single task card used inside Kanban columns.
  * 
- * Each card has a staggered entrance animation.
+ * WHAT'S NEW IN V2:
+ *   - Cards are draggable (HTML5 Drag & Drop)
+ *   - Clicking a card opens the TaskDetailModal
+ *   - Shows a comment count badge (💬) when the task has comments
+ *   - Visual feedback when being dragged (reduced opacity)
+ * 
+ * HOW DRAG WORKS:
+ *   - On dragStart, we store the task ID in event.dataTransfer
+ *   - The KanbanColumn component reads this ID on drop
+ *   - We add/remove a CSS class for the "being dragged" visual state
  */
 
-import { useGroup, useActiveGroup } from '../../context/GroupContext';
+import { useActiveGroup } from '../../context/GroupContext';
 import { PRIORITIES } from '../../utils/helpers';
-import { Trash2 } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import './TaskCard.css';
 
-export default function TaskCard({ task, index }) {
-  const { dispatch } = useGroup();
+export default function TaskCard({ task, index, onClick, draggable }) {
   const group = useActiveGroup();
 
-  // Look up the assigned member (might be null if unassigned)
+  // Look up the assigned member (may be null)
   const assignee = group?.members.find((member) => member.id === task.assigneeId);
 
-  // Get the priority config (label + color)
+  // Get priority config for the color bar
   const priority = PRIORITIES[task.priority];
 
-  // Delete this task
-  const handleDelete = () => {
-    dispatch({
-      type: 'DELETE_TASK',
-      payload: {
-        groupId: group.id,
-        taskId: task.id,
-      },
-    });
+  // Count comments for the badge
+  const commentCount = task.comments?.length || 0;
+
+  /**
+   * When the user starts dragging this card,
+   * store the task ID so the drop target (KanbanColumn) knows which task moved.
+   */
+  const handleDragStart = (event) => {
+    event.dataTransfer.setData('text/plain', task.id);
+    event.dataTransfer.effectAllowed = 'move';
+
+    // Add a visual class to fade out the card being dragged
+    event.currentTarget.classList.add('task-card--dragging');
+  };
+
+  /**
+   * Remove the dragging visual when the drag ends
+   * (whether it was dropped or cancelled).
+   */
+  const handleDragEnd = (event) => {
+    event.currentTarget.classList.remove('task-card--dragging');
   };
 
   return (
     <div
       className="task-card"
       style={{ animationDelay: `${index * 0.04}s` }}
+      onClick={onClick}
+      draggable={draggable}
+      onDragStart={draggable ? handleDragStart : undefined}
+      onDragEnd={draggable ? handleDragEnd : undefined}
     >
-      {/* Colored left border — visual priority indicator */}
+      {/* Colored left border — shows priority at a glance */}
       <span
         className="task-card__priority-bar"
         style={{ background: priority.color }}
@@ -52,13 +72,12 @@ export default function TaskCard({ task, index }) {
       <div className="task-card__content">
         <h4 className="task-card__title">{task.title}</h4>
 
-        {/* Only show description if one was provided */}
         {task.description && (
           <p className="task-card__description">{task.description}</p>
         )}
       </div>
 
-      {/* ── Footer: Assignee + Delete ── */}
+      {/* ── Footer: Assignee + Comment Count ── */}
       <div className="task-card__footer">
         {assignee ? (
           <span className="task-card__assignee">
@@ -69,13 +88,13 @@ export default function TaskCard({ task, index }) {
           <span className="task-card__unassigned">Unassigned</span>
         )}
 
-        <button
-          className="task-card__delete"
-          title="Delete this task"
-          onClick={handleDelete}
-        >
-          <Trash2 size={13} />
-        </button>
+        {/* Comment badge — only shown if there are comments */}
+        {commentCount > 0 && (
+          <span className="task-card__comments">
+            <MessageCircle size={12} />
+            {commentCount}
+          </span>
+        )}
       </div>
     </div>
   );

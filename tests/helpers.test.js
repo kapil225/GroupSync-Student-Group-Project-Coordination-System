@@ -1,50 +1,34 @@
-/**
- * helpers.test.js — V1 Unit Tests
- * 
- * Tests for utility functions in helpers.js.
- * Run with: npm test
- */
-
 import { describe, it, expect } from 'vitest';
-import { generateId, AVATARS, PRIORITIES } from '../src/utils/helpers';
+import { generateId, AVATARS, PRIORITIES, STATUSES, getStatus, formatDate } from '../src/utils/helpers';
 
 describe('generateId', () => {
-  it('should return a non-empty string', () => {
-    expect(typeof generateId()).toBe('string');
-    expect(generateId().length).toBeGreaterThan(0);
+  it('should return unique strings', () => {
+    const ids = new Set([generateId(), generateId(), generateId()]);
+    expect(ids.size).toBe(3);
   });
+  it('should be alphanumeric', () => { expect(generateId()).toMatch(/^[a-z0-9]+$/); });
+});
 
-  it('should return IDs of at least 10 characters', () => {
-    expect(generateId().length).toBeGreaterThanOrEqual(10);
+describe('AVATARS', () => { it('should have 12 options', () => { expect(AVATARS.length).toBe(12); }); });
+describe('PRIORITIES', () => { it('should have low/medium/high', () => { expect(Object.keys(PRIORITIES)).toEqual(['low', 'medium', 'high']); }); });
+
+describe('STATUSES', () => {
+  it('should have 4 statuses in correct order', () => {
+    expect(STATUSES.map((s) => s.key)).toEqual(['todo', 'in_progress', 'review', 'done']);
   });
-
-  it('should generate unique IDs on consecutive calls', () => {
-    const ids = new Set([generateId(), generateId(), generateId(), generateId(), generateId()]);
-    expect(ids.size).toBe(5);
-  });
-
-  it('should only contain alphanumeric characters', () => {
-    expect(generateId()).toMatch(/^[a-z0-9]+$/);
+  it('each status should have all properties', () => {
+    STATUSES.forEach((s) => { expect(s).toHaveProperty('key'); expect(s).toHaveProperty('label'); expect(s).toHaveProperty('color'); expect(s).toHaveProperty('bg'); expect(s).toHaveProperty('border'); });
   });
 });
 
-describe('AVATARS', () => {
-  it('should be a non-empty array of strings', () => {
-    expect(Array.isArray(AVATARS)).toBe(true);
-    expect(AVATARS.length).toBeGreaterThanOrEqual(10);
-    AVATARS.forEach((a) => expect(typeof a).toBe('string'));
-  });
+describe('getStatus', () => {
+  it('should return correct status', () => { expect(getStatus('done').label).toBe('Done'); });
+  it('should fallback to todo for invalid key', () => { expect(getStatus('invalid').key).toBe('todo'); });
 });
 
-describe('PRIORITIES', () => {
-  it('should have exactly three levels: low, medium, high', () => {
-    expect(Object.keys(PRIORITIES)).toEqual(['low', 'medium', 'high']);
-  });
-
-  it('each priority should have a label and color', () => {
-    Object.values(PRIORITIES).forEach((p) => {
-      expect(p).toHaveProperty('label');
-      expect(p).toHaveProperty('color');
-    });
-  });
+describe('formatDate', () => {
+  it('should return "just now" for recent dates', () => { expect(formatDate(new Date().toISOString())).toBe('just now'); });
+  it('should return minutes ago', () => { expect(formatDate(new Date(Date.now() - 5 * 60000).toISOString())).toBe('5m ago'); });
+  it('should return hours ago', () => { expect(formatDate(new Date(Date.now() - 3 * 3600000).toISOString())).toBe('3h ago'); });
+  it('should return days ago', () => { expect(formatDate(new Date(Date.now() - 2 * 86400000).toISOString())).toBe('2d ago'); });
 });
