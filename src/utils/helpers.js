@@ -1,7 +1,7 @@
 /**
- * helpers.js — V2
+ * helpers.js — V3
  * 
- * V2 adds: STATUSES, getStatus(), formatDate()
+ * V3 adds: ROLES system, daysUntil(), deadline helpers
  */
 
 export function generateId() {
@@ -20,7 +20,6 @@ export const PRIORITIES = {
   high:   { label: 'High',   color: 'var(--priority-high)' },
 };
 
-/** V2: Kanban column definitions */
 export const STATUSES = [
   { key: 'todo',        label: 'To Do',       color: '#8888aa', bg: 'rgba(136,136,170,0.08)', border: 'rgba(136,136,170,0.2)' },
   { key: 'in_progress', label: 'In Progress', color: '#4a9eff', bg: 'rgba(74,158,255,0.08)',  border: 'rgba(74,158,255,0.2)' },
@@ -32,16 +31,35 @@ export function getStatus(key) {
   return STATUSES.find((s) => s.key === key) || STATUSES[0];
 }
 
-/** V2: Relative timestamp for comments */
+/**
+ * V3: Role-based permissions
+ * 
+ * SUPER_ADMIN — can see ALL projects/users system-wide
+ * OWNER       — created the project, full control
+ * MEMBER      — can only update their own assigned tasks, can comment
+ */
+export const ROLES = {
+  SUPER_ADMIN: 'super_admin',
+  OWNER: 'owner',
+  MEMBER: 'member',
+};
+
 export function formatDate(isoString) {
-  const secondsAgo = Math.floor((new Date() - new Date(isoString)) / 1000);
-  if (secondsAgo < 60) return 'just now';
-  if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)}m ago`;
-  if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)}h ago`;
-  if (secondsAgo < 604800) return `${Math.floor(secondsAgo / 86400)}d ago`;
+  const sec = Math.floor((new Date() - new Date(isoString)) / 1000);
+  if (sec < 60) return 'just now';
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)}d ago`;
   return new Date(isoString).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export const STORAGE_KEY = 'groupsync-v2-data';
-export function loadFromStorage() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
-export function saveToStorage(data) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { console.error(e); } }
+/**
+ * V3: Calculate days until a deadline.
+ * Positive = future, 0 = today, negative = overdue
+ */
+export function daysUntil(dateString) {
+  if (!dateString) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const deadline = new Date(dateString); deadline.setHours(0, 0, 0, 0);
+  return Math.ceil((deadline - today) / 86400000);
+}

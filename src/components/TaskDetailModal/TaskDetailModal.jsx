@@ -1,153 +1,91 @@
-/**
- * TaskDetailModal.jsx
- * 
- * A slide-out panel that shows full details for a single task.
- * Opens from the right side of the screen when you click a task card.
- * 
- * It displays and allows editing of:
- *   - Task title and description (read-only display)
- *   - Status — via clickable status pills (To Do, In Progress, Review, Done)
- *   - Priority — via a dropdown
- *   - Assignee — via a dropdown
- *   - Comments — a full CommentThread component
- *   - A delete button at the bottom
- * 
- * Closes by:
- *   - Clicking the X button
- *   - Clicking the dark backdrop
- */
-
 import { useGroup, useActiveGroup } from '../../context/GroupContext';
-import { STATUSES, PRIORITIES } from '../../utils/helpers';
+import { STATUSES, PRIORITIES, daysUntil } from '../../utils/helpers';
 import CommentThread from '../CommentThread/CommentThread';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Lock } from 'lucide-react';
 import './TaskDetailModal.css';
 
 export default function TaskDetailModal({ taskId, onClose }) {
-  const { dispatch } = useGroup();
+  const { dispatch, canEditTask } = useGroup();
   const group = useActiveGroup();
-
-  // Safety checks
   if (!group) return null;
-  const task = group.tasks.find((t) => t.id === taskId);
+  const task = group.tasks?.find((t) => t.id === taskId);
   if (!task) return null;
 
-  /**
-   * Update one or more fields on this task.
-   * 
-   * Usage: updateField({ priority: 'high' })
-   *        updateField({ status: 'done' })
-   */
+  const isOwner = canEditTask(group.id, task);
+  const remaining = daysUntil(task.deadline);
+  const isOverdue = remaining !== null && remaining < 0 && task.status !== 'done';
+  const isUrgent = remaining !== null && remaining >= 0 && remaining <= 2 && task.status !== 'done';
+
   const updateField = (updates) => {
-    dispatch({
-      type: 'UPDATE_TASK',
-      payload: {
-        groupId: group.id,
-        taskId: task.id,
-        updates: updates,
-      },
-    });
+    if (!isOwner) { alert('Only the project owner or task creator can edit this task.'); return; }
+    dispatch({ type: 'UPDATE_TASK', payload: { groupId: group.id, taskId: task.id, updates } });
   };
 
-  /**
-   * Delete this task and close the panel.
-   */
   const handleDelete = () => {
-    dispatch({
-      type: 'DELETE_TASK',
-      payload: {
-        groupId: group.id,
-        taskId: task.id,
-      },
-    });
+    if (!isOwner) { alert('Only the project owner or task creator can delete this task.'); return; }
+    dispatch({ type: 'DELETE_TASK', payload: { groupId: group.id, taskId: task.id } });
     onClose();
   };
 
   return (
     <div className="task-detail-overlay" onClick={onClose}>
-      <div className="task-detail" onClick={(event) => event.stopPropagation()}>
-
-        {/* ── Header ── */}
+      <div className="task-detail" onClick={(e) => e.stopPropagation()}>
         <div className="task-detail__header">
           <h2 className="task-detail__title">{task.title}</h2>
-          <button className="task-detail__close" onClick={onClose}>
-            <X size={18} />
-          </button>
+          <button className="task-detail__close" onClick={onClose}><X size={18} /></button>
         </div>
 
-        {/* ── Description (if any) ── */}
-        {task.description && (
-          <p className="task-detail__desc">{task.description}</p>
+        {!isOwner && (
+          <div className="task-detail__permission-notice">
+            <Lock size={13} /> You can only view this task. Only the project owner or task creator can edit.
+          </div>
         )}
 
-        {/* ── Editable Fields ── */}
-        <div className="task-detail__fields">
+        {task.description && <p className="task-detail__desc">{task.description}</p>}
 
-          {/* Status — clickable pills */}
+        <div className="task-detail__fields">
           <div className="task-detail__field">
             <label className="task-detail__label">Status</label>
             <div className="task-detail__status-pills">
-              {STATUSES.map((statusOption) => {
-                const isActive = task.status === statusOption.key;
-
-                return (
-                  <button
-                    key={statusOption.key}
-                    className={`status-pill ${isActive ? 'status-pill--active' : ''}`}
-                    style={{ '--pill-color': statusOption.color }}
-                    onClick={() => updateField({ status: statusOption.key })}
-                  >
-                    <span className="status-pill__dot" />
-                    {statusOption.label}
-                  </button>
-                );
-              })}
+              {STATUSES.map((s) => (
+                <button key={s.key} className={`status-pill ${task.status === s.key ? 'status-pill--active' : ''}`} style={{ '--pill-color': s.color }} onClick={() => updateField({ status: s.key })} disabled={!isOwner}>
+                  <span className="status-pill__dot" />{s.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Priority — dropdown */}
           <div className="task-detail__field">
             <label className="task-detail__label">Priority</label>
-            <select
-              className="task-detail__select"
-              value={task.priority}
-              onChange={(event) => updateField({ priority: event.target.value })}
-            >
-              {Object.entries(PRIORITIES).map(([key, config]) => (
-                <option key={key} value={key}>{config.label}</option>
-              ))}
+            <select className="task-detail__select" value={task.priority} onChange={(e) => updateField({ priority: e.target.value })} disabled={!isOwner}>
+              {Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </div>
 
-          {/* Assignee — dropdown */}
           <div className="task-detail__field">
             <label className="task-detail__label">Assigned To</label>
-            <select
-              className="task-detail__select"
-              value={task.assigneeId || ''}
-              onChange={(event) => {
-                const value = event.target.value;
-                updateField({ assigneeId: value || null });
-              }}
-            >
+            <select className="task-detail__select" value={task.assigneeId || ''} onChange={(e) => updateField({ assigneeId: e.target.value || null })} disabled={!isOwner}>
               <option value="">Unassigned</option>
-              {group.members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.avatar} {member.name}
-                </option>
-              ))}
+              {group.members?.map((m) => <option key={m.id} value={m.id}>{m.avatar} {m.name}</option>)}
             </select>
+          </div>
+
+          <div className="task-detail__field">
+            <label className="task-detail__label">Deadline</label>
+            <input type="date" className="task-detail__select" value={task.deadline || ''} onChange={(e) => updateField({ deadline: e.target.value || null })} disabled={!isOwner} />
+            {task.deadline && task.status !== 'done' && (
+              <span style={{ fontSize: 12, fontWeight: 500, marginTop: 2, color: isOverdue ? '#ff5555' : isUrgent ? '#f5a623' : 'var(--text-muted)' }}>
+                {isOverdue ? `⚠ ${Math.abs(remaining)}d overdue` : remaining === 0 ? '⏰ Due today' : `📅 ${remaining}d remaining`}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* ── Comments Section ── */}
         <CommentThread task={task} />
 
-        {/* ── Delete Button ── */}
-        <button className="task-detail__delete" onClick={handleDelete}>
-          <Trash2 size={14} />
-          Delete Task
-        </button>
+        {isOwner && (
+          <button className="task-detail__delete" onClick={handleDelete}><Trash2 size={14} /> Delete Task</button>
+        )}
       </div>
     </div>
   );

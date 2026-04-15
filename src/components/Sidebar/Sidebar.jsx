@@ -1,14 +1,19 @@
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
-import { Users, FolderOpen, Plus, UserPlus2, LogOut } from 'lucide-react';
+import { ROLES } from '../../utils/helpers';
+import { Users, FolderOpen, Plus, UserPlus2, LogOut, Shield, BarChart3 } from 'lucide-react';
 import './Sidebar.css';
 
 export default function Sidebar({ onNewGroup, onJoinGroup }) {
   const { state, dispatch } = useGroup();
-  const { user, logout } = useAuth();
+  const { user, userRole, logout } = useAuth();
+
+  const isSuperAdmin = userRole === ROLES.SUPER_ADMIN;
+  const hasActiveProject = state.activeGroupId !== null;
 
   return (
     <aside className="sidebar">
+      {/* User info */}
       <div className="sidebar__user">
         <div className="sidebar__user-info">
           <span className="sidebar__user-avatar">
@@ -17,6 +22,7 @@ export default function Sidebar({ onNewGroup, onJoinGroup }) {
           <div className="sidebar__user-details">
             <span className="sidebar__user-name">{user?.displayName || 'User'}</span>
             <span className="sidebar__user-email">{user?.email}</span>
+            {isSuperAdmin && <span className="sidebar__role-badge"><Shield size={10} /> Admin</span>}
           </div>
         </div>
         <button className="sidebar__logout" onClick={logout} title="Sign out"><LogOut size={16} /></button>
@@ -26,6 +32,13 @@ export default function Sidebar({ onNewGroup, onJoinGroup }) {
         <span className="sidebar__logo-icon">◈</span>
         <span className="sidebar__logo-text">GroupSync</span>
       </div>
+
+      {/* Super Admin link */}
+      {isSuperAdmin && (
+        <button className={`sidebar__admin-btn ${state.view === 'admin' ? 'sidebar__admin-btn--active' : ''}`} onClick={() => dispatch({ type: 'NAVIGATE_ADMIN' })}>
+          <Shield size={16} /> System Admin
+        </button>
+      )}
 
       <div className="sidebar__label">Projects</div>
 
@@ -37,12 +50,19 @@ export default function Sidebar({ onNewGroup, onJoinGroup }) {
             <span className="sidebar__item-count"><Users size={12} />{group.members?.length || 0}</span>
           </button>
         ))}
-        {state.groups.length === 0 && <p className="sidebar__empty-hint">Create or join a project below!</p>}
+        {state.groups.length === 0 && <p className="sidebar__empty-hint">Create or join a project!</p>}
       </nav>
+
+      {/* Dashboard link when project is open */}
+      {hasActiveProject && (
+        <button className={`sidebar__dash-btn ${state.view === 'dashboard' ? 'sidebar__dash-btn--active' : ''}`} onClick={() => dispatch({ type: 'NAVIGATE_DASHBOARD' })}>
+          <BarChart3 size={16} /> Dashboard
+        </button>
+      )}
 
       <button className="sidebar__join-btn" onClick={onJoinGroup}><UserPlus2 size={16} />Join Project</button>
       <button className="sidebar__new-btn" onClick={onNewGroup}><Plus size={16} />New Project</button>
-      <div className="sidebar__version">V2 — Kanban</div>
+      <div className="sidebar__version">V3 — Full</div>
     </aside>
   );
 }
