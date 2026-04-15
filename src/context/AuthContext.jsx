@@ -1,139 +1,119 @@
 /**
- * AuthContext.jsx
+ * AuthContext.jsx — V3
  * 
- * Handles all authentication logic:
- *   - Email/password registration (sign up)
- *   - Email/password login (sign in)
- *   - Google sign-in (one-click)
- *   - Sign out
- *   - Track the current user across the app
+ * V3: When a user registers/logs in, their profile is saved to
+ * Firestore 'users' collection. This allows the Super Admin to
+ * see all users in the system.
  * 
- * HOW IT WORKS:
- *   Firebase handles the heavy lifting. We just call its methods
- *   and listen for auth state changes. When a user logs in or out,
- *   Firebase fires onAuthStateChanged, and we update our React state.
- * 
- * USAGE:
- *   const { user, loginWithGoogle, logout } = useAuth();
- *   if (user) console.log("Logged in as", user.email);
+ * Firestore 'users/{uid}':
+ *   { displayName, email, photoURL, role, createdAt, lastLogin }
  */
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-} from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, googleProvider, db } from '../config/firebase';
+import { ROLES } from '../utils/helpers';
 
 const AuthContext = createContext(null);
 
+/**
+ * Save or update user profile in Firestore.
+ * First user becomes SUPER_ADMIN, all others are MEMBER.
+ */
+async function saveUserToFirestore(firebaseUser) {
+  const userRef = doc(db, 'users', firebaseUser.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+    // Existing user — update last login
+    await updateDoc(userRef, { lastLogin: serverTimestamp() });
+    return userSnap.data().role;
+  } else {
+    // New user — check if this is the FIRST user in the system
+    const { getDocs, collection } = await import('firebase/firestore');
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const isFirstUser = usersSnap.empty;
+
+    const userData = {
+      displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      email: firebaseUser.email,
+      photoURL: firebaseUser.photoURL || null,
+      role: isFirstUser ? ROLES.SUPER_ADMIN : ROLES.MEMBER,
+      createdAt: serverTimestamp(),
+      lastLogin: serverTimestamp(),
+    };
+
+    await setDoc(userRef, userData);
+    return userData.role;
+  }
+}
+
 
 export function AuthProvider({ children }) {
-  // The currently logged-in user (null = not logged in)
   const [user, setUser] = useState(null);
-
-  // True while we're checking if there's a saved session
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-
-  /* ─────────────────────────────────────────────
-     LISTEN FOR AUTH CHANGES
-     
-     Firebase remembers the user's session. When the app
-     loads, this listener fires with the saved user (if any).
-     It also fires on login/logout.
-     ───────────────────────────────────────────── */
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);   // Done checking — we know if they're logged in or not
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const role = await saveUserToFirestore(firebaseUser);
+          setUser(firebaseUser);
+          setUserRole(role);
+        } catch (e) {
+          console.error('Error saving user:', e);
+          setUser(firebaseUser);
+          setUserRole(ROLES.MEMBER);
+        }
+      } else {
+        setUser(null);
+        setUserRole(null);
+      }
+      setLoading(false);
     });
-
-    // Cleanup: stop listening when the component unmounts
-    return () => unsubscribe();
+    return () => unsub();
   }, []);
 
-
-  /* ─────────────────────────────────────────────
-     AUTH METHODS
-     ───────────────────────────────────────────── */
-
-  /**
-   * Register a new account with email and password.
-   * Also sets their display name so we can show it in the UI.
-   */
   const registerWithEmail = async (email, password, displayName) => {
     const result = await createUserWithEmailAndPassword(auth, email, password);
-
-    // Set the user's display name (Firebase doesn't do this automatically)
-    await updateProfile(result.user, { displayName: displayName });
-
-    // Force refresh so the displayName is available immediately
-    setUser({ ...result.user, displayName: displayName });
-
+    await updateProfile(result.user, { displayName });
+    const role = await saveUserToFirestore({ ...result.user, displayName });
+    setUser({ ...result.user, displayName });
+    setUserRole(role);
     return result.user;
   };
 
-  /**
-   * Log in with an existing email and password.
-   */
   const loginWithEmail = async (email, password) => {
     const result = await signInWithEmailAndPassword(auth, email, password);
+    const role = await saveUserToFirestore(result.user);
+    setUserRole(role);
     return result.user;
   };
 
-  /**
-   * Sign in with Google (opens a popup window).
-   * The user picks their Google account and they're logged in.
-   * Display name and email come from their Google profile.
-   */
   const loginWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
+    const role = await saveUserToFirestore(result.user);
+    setUserRole(role);
     return result.user;
   };
 
-  /**
-   * Log the user out and clear the session.
-   */
   const logout = async () => {
     await signOut(auth);
     setUser(null);
-  };
-
-
-  /* ─────────────────────────────────────────────
-     PROVIDE TO CHILDREN
-     ───────────────────────────────────────────── */
-
-  const value = {
-    user,                 // Current user object (or null)
-    loading,              // True while checking session
-    registerWithEmail,    // (email, password, name) => Promise
-    loginWithEmail,       // (email, password) => Promise
-    loginWithGoogle,      // () => Promise
-    logout,               // () => Promise
+    setUserRole(null);
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, userRole, loading, registerWithEmail, loginWithEmail, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-
-/**
- * useAuth() — access auth state and methods from any component.
- */
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth() must be called inside <AuthProvider>.');
-  }
-  return context;
+  const c = useContext(AuthContext);
+  if (!c) throw new Error('useAuth needs AuthProvider');
+  return c;
 }

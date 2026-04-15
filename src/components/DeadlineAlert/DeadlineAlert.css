@@ -1,0 +1,30 @@
+/**
+ * DeadlineAlert.css
+ * 
+ * A slim, attention-grabbing bar that sits above
+ * the project content area. Uses warm/red tones
+ * to draw attention to overdue and urgent tasks.
+ */
+
+.deadline-alert {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 32px;
+  background: rgba(200, 50, 50, 0.06);
+  border-bottom: 1px solid rgba(200, 50, 50, 0.15);
+  font-size: 13px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+  flex-wrap: wrap;
+}
+
+/* Overdue — red tint */
+.deadline-alert__overdue {
+  color: #ff5555;
+}
+
+/* Urgent — orange/amber tint */
+.deadline-alert__urgent {
+  color: #f5a623;
+}
