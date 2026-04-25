@@ -1,24 +1,30 @@
+/**
+ * ProjectBoard.jsx — V4
+ * 
+ * V4: Tasks are filtered by visibility.
+ * Owner sees ALL tasks. Members see ONLY tasks assigned to them.
+ * Uses getVisibleTasks() from helpers for filtering.
+ */
+
 import { useState } from 'react';
 import { useGroup, useActiveGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
-import { AVATARS, PRIORITIES, STATUSES } from '../../utils/helpers';
+import { AVATARS, PRIORITIES, STATUSES, isProjectOwner, canCreateTask, canManageMembers, getVisibleTasks } from '../../utils/helpers';
 import Modal from '../../components/Modal/Modal';
 import KanbanColumn from '../../components/KanbanColumn/KanbanColumn';
 import TaskDetailModal from '../../components/TaskDetailModal/TaskDetailModal';
 import DeadlineAlert from '../../components/DeadlineAlert/DeadlineAlert';
-import { UserPlus, Plus, X, Copy, Check, BarChart3, Crown } from 'lucide-react';
+import { UserPlus, Plus, X, Copy, Check, BarChart3, Crown, Lock } from 'lucide-react';
 import './ProjectBoard.css';
 
 export default function ProjectBoard() {
-  const { dispatch, getUserProjectRole } = useGroup();
+  const { dispatch } = useGroup();
   const { user } = useAuth();
   const group = useActiveGroup();
-
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [copied, setCopied] = useState(false);
-
   const [memberName, setMemberName] = useState('');
   const [memberAvatar, setMemberAvatar] = useState(AVATARS[0]);
   const [taskTitle, setTaskTitle] = useState('');
@@ -27,12 +33,17 @@ export default function ProjectBoard() {
   const [taskAssignee, setTaskAssignee] = useState('');
   const [taskDeadline, setTaskDeadline] = useState('');
 
-  if (!group) return null;
+  if (!group || !user) return null;
 
-  const isOwner = getUserProjectRole(group.id) === 'owner';
-  const totalTasks = group.tasks?.length || 0;
-  const doneTasks = (group.tasks || []).filter((t) => t.status === 'done').length;
-  const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const isOwner = isProjectOwner(group, user.uid);
+  const canCreate = canCreateTask(group, user.uid);
+  const canManage = canManageMembers(group, user.uid);
+
+  // V4: STRICT VISIBILITY — members only see their assigned tasks
+  const visibleTasks = getVisibleTasks(group, user.uid);
+  const totalVisible = visibleTasks.length;
+  const doneVisible = visibleTasks.filter((t) => t.status === 'done').length;
+  const progress = totalVisible > 0 ? Math.round((doneVisible / totalVisible) * 100) : 0;
 
   const handleAddMember = () => {
     if (!memberName.trim()) return;
@@ -57,20 +68,21 @@ export default function ProjectBoard() {
           <h1 className="project-board__title">{group.name}</h1>
           <p className="project-board__meta">
             {isOwner && <span className="project-board__owner-badge"><Crown size={12} /> Owner</span>}
-            {group.members?.length || 0} members · {totalTasks} tasks
+            {!isOwner && <span className="project-board__member-badge"><Lock size={11} /> Member — viewing your tasks only</span>}
+            {totalVisible} task{totalVisible !== 1 ? 's' : ''} visible
           </p>
         </div>
         <div className="project-board__actions">
-          {totalTasks > 0 && (
+          {totalVisible > 0 && (
             <div className="mini-progress">
               <div className="mini-progress__track"><div className="mini-progress__fill" style={{ width: `${progress}%` }} /></div>
-              <span className="mini-progress__text">{doneTasks}/{totalTasks}</span>
+              <span className="mini-progress__text">{doneVisible}/{totalVisible}</span>
             </div>
           )}
           <button className="btn-secondary" onClick={() => dispatch({ type: 'NAVIGATE_DASHBOARD' })}><BarChart3 size={15} /> Dashboard</button>
-          {isOwner && <button className="btn-secondary" onClick={() => setShowMemberModal(true)}><UserPlus size={15} /> Add Member</button>}
-          {isOwner && <button className="btn-primary" onClick={() => setShowTaskModal(true)}><Plus size={15} /> New Task</button>}
-          {!isOwner && <span className="project-board__readonly">View only — owner manages tasks</span>}
+          {/* V4: Only show action buttons to owner */}
+          {canManage && <button className="btn-secondary" onClick={() => setShowMemberModal(true)}><UserPlus size={15} /> Add Member</button>}
+          {canCreate && <button className="btn-primary" onClick={() => setShowTaskModal(true)}><Plus size={15} /> New Task</button>}
         </div>
       </div>
 
@@ -91,7 +103,7 @@ export default function ProjectBoard() {
                 <span className="member-chip__avatar">{m.avatar}</span>
                 <span className="member-chip__name">{m.name}</span>
                 {m.userId === group.ownerId && <Crown size={11} style={{ color: '#f5a623' }} />}
-                {isOwner && m.userId !== group.ownerId && (
+                {canManage && m.userId !== group.ownerId && (
                   <button className="member-chip__remove" onClick={() => dispatch({ type: 'REMOVE_MEMBER', payload: { groupId: group.id, memberId: m.id } })}><X size={12} /></button>
                 )}
               </div>
@@ -100,35 +112,41 @@ export default function ProjectBoard() {
         </div>
       )}
 
+      {/* V4: Kanban shows ONLY visible tasks (filtered by role) */}
       <div className="project-board__kanban">
         {STATUSES.map((status) => (
-          <KanbanColumn key={status.key} status={status} tasks={(group.tasks || []).filter((t) => t.status === status.key)} onTaskClick={(id) => setSelectedTaskId(id)} />
+          <KanbanColumn key={status.key} status={status} tasks={visibleTasks.filter((t) => t.status === status.key)} onTaskClick={(id) => setSelectedTaskId(id)} />
         ))}
       </div>
 
       {selectedTaskId && <TaskDetailModal taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />}
 
-      <Modal title="Add Member" isOpen={showMemberModal} onClose={() => setShowMemberModal(false)}>
-        <label className="form-label">Name</label>
-        <input className="form-input" placeholder="Member name" value={memberName} onChange={(e) => setMemberName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddMember()} autoFocus />
-        <label className="form-label">Avatar</label>
-        <div className="avatar-picker">{AVATARS.map((a) => <span key={a} className={`avatar-picker__option ${memberAvatar === a ? 'avatar-picker__option--selected' : ''}`} onClick={() => setMemberAvatar(a)}>{a}</span>)}</div>
-        <button className="form-btn-primary" onClick={handleAddMember}>Add Member</button>
-      </Modal>
+      {/* Modals - only rendered if user has permission */}
+      {canManage && (
+        <Modal title="Add Member" isOpen={showMemberModal} onClose={() => setShowMemberModal(false)}>
+          <label className="form-label">Name</label>
+          <input className="form-input" placeholder="Member name" value={memberName} onChange={(e) => setMemberName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddMember()} autoFocus />
+          <label className="form-label">Avatar</label>
+          <div className="avatar-picker">{AVATARS.map((a) => <span key={a} className={`avatar-picker__option ${memberAvatar === a ? 'avatar-picker__option--selected' : ''}`} onClick={() => setMemberAvatar(a)}>{a}</span>)}</div>
+          <button className="form-btn-primary" onClick={handleAddMember}>Add Member</button>
+        </Modal>
+      )}
 
-      <Modal title="Create Task" isOpen={showTaskModal} onClose={() => setShowTaskModal(false)}>
-        <label className="form-label">Title</label>
-        <input className="form-input" placeholder="What needs to be done?" value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()} autoFocus />
-        <label className="form-label">Description</label>
-        <textarea className="form-textarea" placeholder="Details (optional)" value={taskDesc} onChange={(e) => setTaskDesc(e.target.value)} />
-        <label className="form-label">Priority</label>
-        <select className="form-select" value={taskPriority} onChange={(e) => setTaskPriority(e.target.value)}>{Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
-        <label className="form-label">Assign To</label>
-        <select className="form-select" value={taskAssignee} onChange={(e) => setTaskAssignee(e.target.value)}><option value="">Unassigned</option>{group.members?.map((m) => <option key={m.id} value={m.id}>{m.avatar} {m.name}</option>)}</select>
-        <label className="form-label">Deadline</label>
-        <input type="date" className="form-input" value={taskDeadline} onChange={(e) => setTaskDeadline(e.target.value)} />
-        <button className="form-btn-primary" onClick={handleCreateTask}>Create Task</button>
-      </Modal>
+      {canCreate && (
+        <Modal title="Create Task" isOpen={showTaskModal} onClose={() => setShowTaskModal(false)}>
+          <label className="form-label">Title</label>
+          <input className="form-input" placeholder="What needs to be done?" value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()} autoFocus />
+          <label className="form-label">Description</label>
+          <textarea className="form-textarea" placeholder="Details (optional)" value={taskDesc} onChange={(e) => setTaskDesc(e.target.value)} />
+          <label className="form-label">Priority</label>
+          <select className="form-select" value={taskPriority} onChange={(e) => setTaskPriority(e.target.value)}>{Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
+          <label className="form-label">Assign To</label>
+          <select className="form-select" value={taskAssignee} onChange={(e) => setTaskAssignee(e.target.value)}><option value="">Unassigned</option>{group.members?.map((m) => <option key={m.id} value={m.id}>{m.avatar} {m.name}</option>)}</select>
+          <label className="form-label">Deadline</label>
+          <input type="date" className="form-input" value={taskDeadline} onChange={(e) => setTaskDeadline(e.target.value)} />
+          <button className="form-btn-primary" onClick={handleCreateTask}>Create Task</button>
+        </Modal>
+      )}
     </div>
   );
 }

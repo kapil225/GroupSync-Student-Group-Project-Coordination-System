@@ -1,9 +1,12 @@
 import { useGroup, useActiveGroup } from '../../context/GroupContext';
+import { useAuth } from '../../context/AuthContext';
+import { canEditTask } from '../../utils/helpers';
 import TaskCard from '../TaskCard/TaskCard';
 import './KanbanColumn.css';
 
 export default function KanbanColumn({ status, tasks, onTaskClick }) {
-  const { dispatch, canDragTask } = useGroup();
+  const { dispatch } = useGroup();
+  const { user } = useAuth();
   const group = useActiveGroup();
 
   const handleDragOver = (e) => { e.preventDefault(); e.currentTarget.classList.add('kanban-col--drag-over'); };
@@ -12,9 +15,10 @@ export default function KanbanColumn({ status, tasks, onTaskClick }) {
     e.preventDefault();
     e.currentTarget.classList.remove('kanban-col--drag-over');
     const taskId = e.dataTransfer.getData('text/plain');
-    if (taskId && group) {
+    if (taskId && group && user) {
       const task = group.tasks?.find((t) => t.id === taskId);
-      if (task && canDragTask(group.id, task)) {
+      // V4: Permission check before allowing drop
+      if (task && canEditTask(group, task, user.uid)) {
         dispatch({ type: 'UPDATE_TASK_STATUS', payload: { groupId: group.id, taskId, status: status.key } });
       }
     }
