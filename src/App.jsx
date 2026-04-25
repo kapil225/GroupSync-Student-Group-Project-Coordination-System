@@ -8,6 +8,7 @@ import Home from './pages/Home/Home';
 import ProjectBoard from './pages/ProjectBoard/ProjectBoard';
 import Dashboard from './pages/Dashboard/Dashboard';
 import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
+import AuditLog from './pages/AuditLog/AuditLog';
 import './App.css';
 
 function AppLayout() {
@@ -28,6 +29,7 @@ function AppLayout() {
         {state.view === 'board' && <ProjectBoard />}
         {state.view === 'dashboard' && <Dashboard />}
         {state.view === 'admin' && <AdminDashboard />}
+        {state.view === 'audit' && <AuditLog />}
       </main>
 
       <Modal title="Create New Project" isOpen={showNewGroupModal} onClose={() => setShowNewGroupModal(false)}>
