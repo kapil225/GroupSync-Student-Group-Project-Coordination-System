@@ -1,7 +1,10 @@
 /**
- * helpers.js — V3
+ * helpers.js — V4
  * 
- * V3 adds: ROLES system, daysUntil(), deadline helpers
+ * V4 adds:
+ *   - permissions.js logic built-in: canView, canEdit, canDelete, canComment
+ *   - AUDIT_ACTIONS for audit logging
+ *   - Strict task visibility rules
  */
 
 export function generateId() {
@@ -31,13 +34,6 @@ export function getStatus(key) {
   return STATUSES.find((s) => s.key === key) || STATUSES[0];
 }
 
-/**
- * V3: Role-based permissions
- * 
- * SUPER_ADMIN — can see ALL projects/users system-wide
- * OWNER       — created the project, full control
- * MEMBER      — can only update their own assigned tasks, can comment
- */
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',
   OWNER: 'owner',
@@ -53,13 +49,151 @@ export function formatDate(isoString) {
   return new Date(isoString).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-/**
- * V3: Calculate days until a deadline.
- * Positive = future, 0 = today, negative = overdue
- */
 export function daysUntil(dateString) {
   if (!dateString) return null;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const deadline = new Date(dateString); deadline.setHours(0, 0, 0, 0);
   return Math.ceil((deadline - today) / 86400000);
 }
+
+
+/* ═══════════════════════════════════════════════════════
+   V4: PERMISSIONS ENGINE
+   
+   Central authorization logic. Every permission check
+   goes through these functions. This is the equivalent
+   of middleware in a traditional backend — enforcing
+   rules at the service layer before any data mutation.
+   
+   RULES:
+   ┌──────────────────┬─────────────┬──────────────┬──────────────┐
+   │ Action           │ Owner       │ Assigned User│ Other Member │
+   ├──────────────────┼─────────────┼──────────────┼──────────────┤
+   │ Create Task      │ ✅          │ ❌           │ ❌           │
+   │ View Task        │ ✅          │ ✅ (theirs)  │ ❌           │
+   │ Update Task      │ ✅          │ ✅ (theirs)  │ ❌           │
+   │ Delete Task      │ ✅          │ ❌           │ ❌           │
+   │ Add Comment      │ ✅          │ ✅ (theirs)  │ ❌           │
+   │ View Comments    │ ✅          │ ✅ (theirs)  │ ❌           │
+   │ Add/Remove Member│ ✅          │ ❌           │ ❌           │
+   │ Delete Project   │ ✅          │ ❌           │ ❌           │
+   └──────────────────┴─────────────┴──────────────┴──────────────┘
+   ═══════════════════════════════════════════════════════ */
+
+/**
+ * Check if a user is the project owner.
+ */
+export function isProjectOwner(group, userId) {
+  if (!group || !userId) return false;
+  return group.ownerId === userId;
+}
+
+/**
+ * Get the member object for a Firebase user within a group.
+ */
+export function getMemberForUser(group, userId) {
+  if (!group || !userId) return null;
+  return group.members?.find((m) => m.userId === userId) || null;
+}
+
+/**
+ * Check if a user is assigned to a specific task.
+ */
+export function isTaskAssignee(group, task, userId) {
+  if (!group || !task || !userId) return false;
+  const member = getMemberForUser(group, userId);
+  return member && task.assigneeId === member.id;
+}
+
+/**
+ * V4: Can this user VIEW a specific task?
+ * Owner can view all. Members can only view tasks assigned to them.
+ */
+export function canViewTask(group, task, userId) {
+  if (isProjectOwner(group, userId)) return true;
+  return isTaskAssignee(group, task, userId);
+}
+
+/**
+ * V4: Can this user EDIT/UPDATE a specific task?
+ * Owner can edit all. Assigned user can update their own (status, progress).
+ */
+export function canEditTask(group, task, userId) {
+  if (isProjectOwner(group, userId)) return true;
+  return isTaskAssignee(group, task, userId);
+}
+
+/**
+ * V4: Can this user DELETE a specific task?
+ * Only the project owner can delete tasks.
+ */
+export function canDeleteTask(group, userId) {
+  return isProjectOwner(group, userId);
+}
+
+/**
+ * V4: Can this user CREATE tasks?
+ * Only the project owner can create tasks.
+ */
+export function canCreateTask(group, userId) {
+  return isProjectOwner(group, userId);
+}
+
+/**
+ * V4: Can this user ADD/VIEW comments on a task?
+ * Owner can comment on any task. Assigned user can comment on their task.
+ */
+export function canCommentOnTask(group, task, userId) {
+  if (isProjectOwner(group, userId)) return true;
+  return isTaskAssignee(group, task, userId);
+}
+
+/**
+ * V4: Can this user manage members (add/remove)?
+ * Only the project owner.
+ */
+export function canManageMembers(group, userId) {
+  return isProjectOwner(group, userId);
+}
+
+/**
+ * V4: Filter tasks to only show ones the user can see.
+ * Owner sees all. Members see only their assigned tasks.
+ */
+export function getVisibleTasks(group, userId) {
+  if (!group || !userId) return [];
+  const tasks = group.tasks || [];
+
+  if (isProjectOwner(group, userId)) {
+    return tasks; // Owner sees everything
+  }
+
+  // Members only see tasks assigned to them
+  const member = getMemberForUser(group, userId);
+  if (!member) return [];
+
+  return tasks.filter((task) => task.assigneeId === member.id);
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   V4: AUDIT LOG TYPES
+   
+   Every significant action is logged with these types.
+   The audit log stores: action, userId, userName,
+   targetId, details, timestamp.
+   ═══════════════════════════════════════════════════════ */
+
+export const AUDIT_ACTIONS = {
+  TASK_CREATED: 'task_created',
+  TASK_UPDATED: 'task_updated',
+  TASK_STATUS_CHANGED: 'task_status_changed',
+  TASK_DELETED: 'task_deleted',
+  COMMENT_ADDED: 'comment_added',
+  COMMENT_DELETED: 'comment_deleted',
+  MEMBER_ADDED: 'member_added',
+  MEMBER_REMOVED: 'member_removed',
+  PROJECT_CREATED: 'project_created',
+  PROJECT_DELETED: 'project_deleted',
+  UNAUTHORIZED_ACCESS: 'unauthorized_access',
+};

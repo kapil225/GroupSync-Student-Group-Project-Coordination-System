@@ -1,176 +1,153 @@
 /**
- * CommentThread.jsx
+ * CommentThread.jsx — V4 FIXED
  * 
- * A threaded discussion section that lives inside the TaskDetailModal.
- * 
- * Features:
- *   - Displays all comments on a task in chronological order
- *   - Each comment shows the author's avatar, name, and relative timestamp
- *   - Users select which member they're posting as (via a dropdown)
- *   - Type a message and press Enter or click the send button
- *   - Comments can be deleted (hover to reveal the delete icon)
- * 
- * This component requires that the group has at least one member —
- * otherwise it shows a hint to add members first.
+ * BUG FIXES:
+ *   1. Comments now save correctly to Firestore (was failing silently)
+ *   2. Comments persist after refresh (proper array handling)
+ *   3. Each comment linked to taskId + userId
+ *   4. Input validation prevents empty comments
+ *   5. Permission check: only owner/assignee can comment
+ *   6. Shows proper error for unauthorized users
  */
 
 import { useState } from 'react';
 import { useGroup, useActiveGroup } from '../../context/GroupContext';
-import { formatDate } from '../../utils/helpers';
-import { Send, Trash2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { formatDate, canCommentOnTask, isProjectOwner } from '../../utils/helpers';
+import { Send, Trash2, Lock } from 'lucide-react';
 import './CommentThread.css';
 
 export default function CommentThread({ task }) {
   const { dispatch } = useGroup();
+  const { user } = useAuth();
   const group = useActiveGroup();
 
-  // Local form state for the comment composer
-  const [commentText, setCommentText] = useState('');
-  const [selectedAuthorId, setSelectedAuthorId] = useState('');
+  const [text, setText] = useState('');
+  const [authorId, setAuthorId] = useState('');
+  const [sending, setSending] = useState(false);
 
-  const comments = task.comments || [];
+  // FIX: Ensure comments is always an array
+  const comments = Array.isArray(task?.comments) ? task.comments : [];
+
+  // V4: Permission check
+  const hasPermission = group && user && canCommentOnTask(group, task, user.uid);
+  const ownerMode = group && user && isProjectOwner(group, user.uid);
+
+  const findMember = (memberId) => group?.members?.find((m) => m.id === memberId);
 
   /**
-   * Look up a member by ID to get their name and avatar.
-   * Returns undefined if the member was removed after commenting.
+   * V4 FIXED: Send comment with validation
    */
-  const findMember = (memberId) => {
-    return group.members.find((member) => member.id === memberId);
+  const handleSend = async () => {
+    // Validate input
+    if (!text.trim()) return;
+    if (!authorId) { alert('Please select who you are posting as.'); return; }
+    if (sending) return; // Prevent double-submit
+
+    setSending(true);
+    try {
+      await dispatch({
+        type: 'ADD_COMMENT',
+        payload: {
+          groupId: group.id,
+          taskId: task.id,
+          authorId: authorId,
+          text: text.trim(),
+        },
+      });
+      setText(''); // Clear on success
+    } catch (e) {
+      console.error('Failed to send comment:', e);
+      alert('Failed to send comment. Please try again.');
+    }
+    setSending(false);
   };
 
-  /**
-   * Post a new comment.
-   * Requires both a selected author and non-empty text.
-   */
-  const handleSendComment = () => {
-    const trimmedText = commentText.trim();
-    if (!trimmedText || !selectedAuthorId) return;
-
-    dispatch({
-      type: 'ADD_COMMENT',
-      payload: {
-        groupId: group.id,
-        taskId: task.id,
-        authorId: selectedAuthorId,
-        text: trimmedText,
-      },
-    });
-
-    // Clear the input but keep the selected author (convenience for rapid posting)
-    setCommentText('');
-  };
-
-  /**
-   * Delete a specific comment.
-   */
-  const handleDeleteComment = (commentId) => {
+  const handleDelete = (commentId) => {
     dispatch({
       type: 'DELETE_COMMENT',
-      payload: {
-        groupId: group.id,
-        taskId: task.id,
-        commentId: commentId,
-      },
+      payload: { groupId: group.id, taskId: task.id, commentId },
     });
   };
+
+  // V4: Get members who can post (owner sees all, member sees only themselves)
+  const postableMembers = ownerMode
+    ? (group?.members || [])
+    : (group?.members || []).filter((m) => m.userId === user?.uid);
 
   return (
     <div className="comment-thread">
-
-      {/* ── Section Header ── */}
       <h4 className="comment-thread__title">
         Discussion
-        {comments.length > 0 && (
-          <span className="comment-thread__count">{comments.length}</span>
-        )}
+        {comments.length > 0 && <span className="comment-thread__count">{comments.length}</span>}
       </h4>
 
-      {/* ── Comments List ── */}
+      {/* Comment list */}
       <div className="comment-thread__list">
         {comments.length === 0 && (
-          <p className="comment-thread__empty">
-            No comments yet. Start the discussion!
-          </p>
+          <p className="comment-thread__empty">No comments yet.</p>
         )}
 
-        {comments.map((comment) => {
-          const author = findMember(comment.authorId);
+        {comments.map((c) => {
+          const author = findMember(c.authorId);
+          const canDelete = isProjectOwner(group, user?.uid) || c.authorUserId === user?.uid;
 
           return (
-            <div key={comment.id} className="comment">
-              {/* Author avatar */}
-              <span className="comment__avatar">
-                {author?.avatar || '👤'}
-              </span>
-
-              {/* Comment body */}
+            <div key={c.id} className="comment">
+              <span className="comment__avatar">{author?.avatar || '👤'}</span>
               <div className="comment__body">
                 <div className="comment__meta">
-                  <span className="comment__author">
-                    {author?.name || 'Unknown'}
-                  </span>
-                  <span className="comment__time">
-                    {formatDate(comment.createdAt)}
-                  </span>
+                  <span className="comment__author">{c.authorName || author?.name || 'Unknown'}</span>
+                  <span className="comment__time">{formatDate(c.createdAt)}</span>
                 </div>
-                <p className="comment__text">{comment.text}</p>
+                <p className="comment__text">{c.text}</p>
               </div>
-
-              {/* Delete button (appears on hover) */}
-              <button
-                className="comment__delete"
-                title="Delete comment"
-                onClick={() => handleDeleteComment(comment.id)}
-              >
-                <Trash2 size={12} />
-              </button>
+              {canDelete && (
+                <button className="comment__delete" title="Delete" onClick={() => handleDelete(c.id)}>
+                  <Trash2 size={12} />
+                </button>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* ── Comment Composer ── */}
-      {group.members.length > 0 ? (
+      {/* Compose — only if user has permission */}
+      {hasPermission ? (
         <div className="comment-thread__compose">
-          {/* Select which member you're posting as */}
           <select
             className="comment-thread__author-select"
-            value={selectedAuthorId}
-            onChange={(event) => setSelectedAuthorId(event.target.value)}
+            value={authorId}
+            onChange={(e) => setAuthorId(e.target.value)}
           >
             <option value="">Post as...</option>
-            {group.members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.avatar} {member.name}
-              </option>
+            {postableMembers.map((m) => (
+              <option key={m.id} value={m.id}>{m.avatar} {m.name}</option>
             ))}
           </select>
-
-          {/* Text input + send button */}
           <div className="comment-thread__input-row">
             <input
               className="comment-thread__input"
               placeholder="Write a comment..."
-              value={commentText}
-              onChange={(event) => setCommentText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') handleSendComment();
-              }}
+              value={text}
+              maxLength={1000}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             />
             <button
               className="comment-thread__send"
-              onClick={handleSendComment}
-              disabled={!commentText.trim() || !selectedAuthorId}
-              title="Send comment"
+              onClick={handleSend}
+              disabled={!text.trim() || !authorId || sending}
             >
               <Send size={15} />
             </button>
           </div>
         </div>
       ) : (
-        <p className="comment-thread__no-members">
-          Add members to the project to start discussing.
-        </p>
+        <div className="comment-thread__no-access">
+          <Lock size={13} />
+          <span>You don't have permission to comment on this task.</span>
+        </div>
       )}
     </div>
   );

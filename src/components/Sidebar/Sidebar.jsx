@@ -1,7 +1,7 @@
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/helpers';
-import { Users, FolderOpen, Plus, UserPlus2, LogOut, Shield, BarChart3 } from 'lucide-react';
+import { Users, FolderOpen, Plus, UserPlus2, LogOut, Shield, BarChart3, History } from 'lucide-react';
 import './Sidebar.css';
 
 export default function Sidebar({ onNewGroup, onJoinGroup }) {
@@ -60,9 +60,16 @@ export default function Sidebar({ onNewGroup, onJoinGroup }) {
         </button>
       )}
 
+      {/* V4: Audit Log link (owner only) */}
+      {hasActiveProject && isSuperAdmin && (
+        <button className={`sidebar__dash-btn ${state.view === 'audit' ? 'sidebar__dash-btn--active' : ''}`} onClick={() => dispatch({ type: 'NAVIGATE_AUDIT' })}>
+          <History size={16} /> Audit Log
+        </button>
+      )}
+
       <button className="sidebar__join-btn" onClick={onJoinGroup}><UserPlus2 size={16} />Join Project</button>
       <button className="sidebar__new-btn" onClick={onNewGroup}><Plus size={16} />New Project</button>
-      <div className="sidebar__version">V3 — Full</div>
+      <div className="sidebar__version">V4 — RBAC</div>
     </aside>
   );
 }
