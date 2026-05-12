@@ -1,5 +1,8 @@
 # GroupSync V4 — Strict RBAC, Audit Logging, Fixed Comments
 
+Previrew available at: https://groupsync-student-group-project-coo-rho.vercel.app/<img width="468" height="38" alt="image" src="https://github.com/user-attachments/assets/7b819767-0400-41ad-b337-8e05c0afc452" />
+
+
 ## What's New in V4
 
 ### Strict Role-Based Access Control (RBAC)
